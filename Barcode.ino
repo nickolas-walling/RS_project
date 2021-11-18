@@ -1,5 +1,5 @@
 #define GO 6
-#define SAMPLE 4
+#define SAMPLE 5
 
 #include "encoders.h"
 #include "linesensor.h"
@@ -8,8 +8,9 @@
 #include "kinematics.h"
 #include <math.h>
 
-double STR_TIME = 253623;
+double STR_TIME = 138222;
 double inc_angle;
+float vels[3];
 
 PID_c heading;
 PID_c follow;
@@ -21,9 +22,9 @@ Kinematics_c kine;
 
 unsigned long start_ts;
 
-float K_p_left = 1;
-float K_i_left = 0.1;
-float K_d_left = 0.01;
+float K_p_left = 5; //1
+float K_i_left = 0; //0.1
+float K_d_left = 0; //0.01
 
 unsigned long temp1 = 0;
 unsigned long temp2 = 0;
@@ -57,7 +58,6 @@ void loop() {
   unsigned long current_ts = millis();
   unsigned long elapsed;
 
-
   float feedback_L;
   float feedback_R;
 
@@ -74,6 +74,9 @@ void loop() {
     motors.left(feedback_L);
     motors.right(feedback_R);
 
+    //motors.left(25);
+    //motors.right(25);
+
     if (sensors.on_line() && temp1 == 0) {
       temp1 = micros();
       blank[i] = temp1 - temp2;
@@ -83,43 +86,33 @@ void loop() {
       temp2 = micros();
       val[i] = temp2 - temp1;
       temp1 = 0;
+      vels[i] = kine.velocity_L_rad;
       i++;
-      //should I put the val calculation here?
-
-      /*motors.halt();
-        digitalWrite(LED_BUILTIN, HIGH);
-        while (1) {
-        Serial.println(temp2 - temp1);*/
     }
-    //}
-    /*else if (!sensors.on_line() && temp4 == 0){
-      temp4 = micros();
-      }*/
-    /*
-      if (temp1 != 0 && temp2 != 0) {
-      val[i] = temp2 - temp1;
-      temp1 = 0;
-      i++;
-      }
-    */
-    if (val[2] != 0) {
+
+    if (i==3) {
       motors.halt();
-      while (1) {
+      Serial.begin(9600);
+      while (!Serial) {}
         Serial.println(val[0]);
         Serial.println(val[1]);
         Serial.println(val[2]);
         Serial.println("*");
+        Serial.println(vels[0]);
+        Serial.println(vels[1]);
+        Serial.println(vels[2]);
+        Serial.println("**");
         Serial.println(blank[0]);
         Serial.println(blank[1]);
         Serial.println(blank[2]);
-        Serial.println("**");
-        Serial.println(average(val));
         Serial.println("***");
+        Serial.println(average(val));
+        Serial.println("****");
         inc_angle = acos(STR_TIME/average(val));
-        Serial.println(inc_angle*1000);
-        Serial.println("*****");
+        Serial.println(inc_angle);
+        Serial.println("******");
         
-      }
+      //}
     }
     start_ts = millis();
 

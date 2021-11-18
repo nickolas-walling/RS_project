@@ -241,7 +241,7 @@ class LineSensor_c {
     }
 
     bool on_line() {
-      if (cond_C > 0.4) {
+      if (cond_C > 0.32) { //good enough
         return true;
       }
       else {
