@@ -1,3 +1,9 @@
+/* THOUGHTS:
+ *  use left and right sensors separately for measurements
+ *  can determine directionality that way
+ *  give more data for averages  
+ */
+
 #define GO 4
 #define SAMPLE 5
 
@@ -8,9 +14,9 @@
 #include "kinematics.h"
 #include <math.h>
 
-double STR_TIME = 138222;
+double STR_TIME = 234562;
 double inc_angle;
-float vels[3];
+double c;
 
 float avg_spd_L;
 float avg_spd_R;
@@ -104,10 +110,13 @@ void loop() {
 
     if (i == 6) {
       motors.halt();
+      c = (((double)val[3] + (double)val[5])-((double)val[2] + (double)val[4]))/2;
+      inc_angle = acos(STR_TIME/c);
       while (1) {
-        for (int j = 0; j < 6; j++) {
+        /*for (int j = 0; j < 6; j++) {
           Serial.println(val[j]);
-        }
+        }*/
+        Serial.println(inc_angle*100);
         Serial.println("******");
       }
     }
