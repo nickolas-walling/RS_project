@@ -4,8 +4,8 @@
  *  give more data for averages  
  */
 
-#define GO 4
-#define SAMPLE 5
+#define GO 6
+#define SAMPLE0 5
 
 #include "encoders.h"
 #include "linesensor.h"
@@ -14,9 +14,12 @@
 #include "kinematics.h"
 #include <math.h>
 
-double STR_TIME = 234562;
+double STR_TIME = 150000;
 double inc_angle;
 double c;
+int code[10];
+int count = 0;
+bool start_tag = false;
 
 float avg_spd_L;
 float avg_spd_R;
@@ -29,11 +32,12 @@ LineSensor_c sensors;
 Motors_c motors;
 Kinematics_c kine;
 
-unsigned long start_ts;
+unsigned long start_ts0;
+unsigned long start_ts1;
 
-float K_p_left = 5; //1
+float K_p_left = 8; //1
 float K_i_left = 0.1; //0.1
-float K_d_left = 0; //0.01
+float K_d_left = 1; //0.01
 
 unsigned long start = 0;
 
@@ -42,7 +46,6 @@ int state = 0;
 int i = 1;
 
 unsigned long val[6];
-
 
 void setup() {
   // put your setup code here, to run once:
@@ -64,22 +67,26 @@ void setup() {
   left.initialize(K_p_left, K_i_left, K_d_left);
   right.initialize(K_p_left, K_i_left, K_d_left);
 
-  start_ts = millis();
+  start_ts0 = millis();
+  start_ts1 = micros();
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  unsigned long current_ts = millis();
-  unsigned long elapsed;
+  unsigned long current_ts0 = millis();
+  unsigned long current_ts1 = micros();
+  unsigned long elapsed0;
+  unsigned long elapsed1;
 
   float feedback_L;
   float feedback_R;
 
-  elapsed = current_ts - start_ts;
+  elapsed0 = current_ts0 - start_ts0;
+  elapsed1 = current_ts1 - start_ts1;
 
-  if (elapsed > SAMPLE) {
+  if (elapsed0 > SAMPLE0) {
     kine.update();
-    kine.velocity(elapsed);
+    kine.velocity(elapsed0);
     avg_spd_L = (avg_spd_L * 0.7) + (kine.velocity_L_rad * 0.3);
     avg_spd_R = (avg_spd_R * 0.7) + (kine.velocity_R_rad * 0.3);
     sensors.read_linesensors();
@@ -92,8 +99,53 @@ void loop() {
 
     //motors.left(25);
     //motors.right(25);
+    
+    //angle_check();    
 
-    if (sensors.on_line() && state == 0) {
+    if (sensors.on_line()){
+      start_tag = true;
+    }
+    
+    start_ts0 = millis();
+  }
+
+
+  if ((double)elapsed1 > STR_TIME/2 && start_tag == true){
+    sensors.read_linesensors();
+    if (sensors.on_line()){
+      code[count] = 1;
+    }
+    else{
+      code[count] = 0;
+    }
+    count++;
+    start_ts1 = micros();
+  }
+
+  if (count == 11){
+    motors.halt();
+    while(1){
+      for (int i = 0; i < 10; i++){
+        Serial.println(code[i]);
+      }
+      Serial.println("******");
+    }
+  }
+
+}
+
+double average(unsigned long num[3]) {
+  double temp = 0;
+  for (int i = 0; i < 3; i++) {
+    temp += (double)num[i];
+  }
+  temp = temp / 3;
+
+  return temp;
+}
+
+double angle_check(){
+  if (sensors.on_line() && state == 0) {
       start = micros();
       state = 1;
     }
@@ -113,25 +165,20 @@ void loop() {
       c = (((double)val[3] + (double)val[5])-((double)val[2] + (double)val[4]))/2;
       inc_angle = acos(STR_TIME/c);
       while (1) {
-        /*for (int j = 0; j < 6; j++) {
+        for (int j = 0; j < 6; j++) {
           Serial.println(val[j]);
-        }*/
+        }
+        Serial.println("**");
         Serial.println(inc_angle*100);
+        Serial.println("average speed");
+        Serial.println(avg_spd_L*100);
         Serial.println("******");
       }
     }
-    start_ts = millis();
-
-  }
-
+    return inc_angle;
 }
 
-double average(unsigned long num[3]) {
-  double temp = 0;
-  for (int i = 0; i < 3; i++) {
-    temp += (double)num[i];
-  }
-  temp = temp / 3;
-
-  return temp;
+void code_read(int count){
+  float start_read_ts = micros();
+  code[count] = sensors.on_line();
 }

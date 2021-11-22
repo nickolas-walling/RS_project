@@ -45,73 +45,52 @@ class Motors_c {
 
       //check if value is within range
 
-      /*if (pwm < -100 || pwm > 100) {
-        Serial.println("Invalid PWM value");
-        halt();
-        while (1) {
-          digitalWrite(LED_BUILTIN, HIGH);
-          delay(250);
-          digitalWrite(LED_BUILTIN, LOW);
-          delay(250);
-        }
-        }*/
-
       if (pwm < -100) {
         pwm = -100;
       }
       else if (pwm > 100) {
         pwm = 100;
       }
-      else {
 
-        //set motor direction
-        if (pwm < 0) {
-          digitalWrite(L_DIR_PIN, HIGH);
-        }
-        else {
-          digitalWrite(L_DIR_PIN, LOW);
-        }
 
-        //set motor power
-        analogWrite(L_PWM_PIN, abs(pwm));
+      //set motor direction
+      if (pwm < 0) {
+        digitalWrite(L_DIR_PIN, HIGH);
       }
+      else {
+        digitalWrite(L_DIR_PIN, LOW);
+      }
+
+      //set motor power
+      analogWrite(L_PWM_PIN, abs(pwm));
     }
+
 
     void right(float pwm) {
 
       //check if value is within range
-      /*
-            if (pwm < -100 || pwm > 100) {
-              halt();
-              Serial.println("Invalid PWM value");
-              while (1) {
-                digitalWrite(LED_BUILTIN, HIGH);
-                delay(250);
-                digitalWrite(LED_BUILTIN, LOW);
-                delay(250);
-              }
-            }*/
+
       if (pwm < -100) {
         pwm = -100;
       }
       else if (pwm > 100) {
         pwm = 100;
       }
+
+
+      //set motor direction
+      if (pwm < 0) {
+        digitalWrite(R_DIR_PIN, HIGH);
+      }
       else {
-
-        //set motor direction
-        if (pwm < 0) {
-          digitalWrite(R_DIR_PIN, HIGH);
-        }
-        else {
-          digitalWrite(R_DIR_PIN, LOW);
-        }
-
-        //set motor power
-        analogWrite(R_PWM_PIN, abs(pwm));
+        digitalWrite(R_DIR_PIN, LOW);
       }
 
+      //set motor power
+      analogWrite(R_PWM_PIN, abs(pwm));
     }
+
+
 
 
 };

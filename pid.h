@@ -21,6 +21,7 @@ class PID_c {
     float feedback_i;
     float feedback_d;
     float feedback;
+    float err_prev;
 
     unsigned long dt;
     unsigned long start_ts;
@@ -41,10 +42,11 @@ class PID_c {
       current_ts = millis();
 
       dt = current_ts - start_ts;
-
-      feedback_d = K_d * (demand - measurement - err) / (float)dt;
-
       err = demand - measurement;
+
+      feedback_d = K_d * (err - err_prev) / (float)dt;
+
+      err_prev = err;
 
       feedback_p = K_p * err;
 
