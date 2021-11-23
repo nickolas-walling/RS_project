@@ -36,7 +36,7 @@ class PID_c {
     }
 
     float update(float demand, float measurement) {
-      float err = 0;
+      float err;
       unsigned long current_ts;
 
       current_ts = millis();
