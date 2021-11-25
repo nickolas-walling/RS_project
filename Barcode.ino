@@ -2,7 +2,8 @@
     use left and right sensors separately for measurements
     can determine directionality that way
     give more data for averages
-    since we have kinematics, we could re-phrase everything for distance instead of time
+    since we have kinematics, we could re-phrase everything for distance instead of time?
+    Need to re-set line time values--> play with sensitivity value
 */
 
 //#define GO 6
@@ -48,9 +49,11 @@ unsigned long start = 0;
 
 int state = 0;
 
-int i = 1;
+int i = 0;
 
 unsigned long val[6];
+float pos[6];
+bool flag = false;
 
 void setup() {
   // put your setup code here, to run once:
@@ -90,7 +93,7 @@ void loop() {
   elapsed1 = current_ts1 - start_ts1;
 
   if (elapsed0 > SAMPLE0) {
-    //kine.update();
+    kine.update();
     kine.velocity(elapsed0);
     avg_spd_L = (avg_spd_L * 0.7) + (kine.velocity_L_rad * 0.3);
     avg_spd_R = (avg_spd_R * 0.7) + (kine.velocity_R_rad * 0.3);
@@ -105,6 +108,22 @@ void loop() {
     //motors.left(25);
     //motors.right(25);
 
+   /* if (sensors.on_line()){
+      pos[0] = kine.X;
+      flag = true;
+    }
+    else if (!sensors.on_line() && flag == true){
+      pos[1] = kine.X;
+      motors.halt();
+      while(1){
+        for (int i = 0; i < 2; i++){
+          Serial.println(pos[i]);
+          
+        }
+        Serial.println("***");
+      }
+    }
+*/
     angle_check();
     start_ts0 = millis();
 
@@ -158,27 +177,33 @@ double angle_check() {
   }
   else if (!sensors.on_line() && state == 1) {
     val[i] = micros() - start;
+    pos[i] = kine.X;
     state = 2;
     i++;
   }
   else if (sensors.on_line() && state == 2) {
     val[i] = micros() - start;
+    pos[i] = kine.X;
     state = 1;
     i++;
   }
 
   if (i == 6) {
-    motors.halt();
+//    motors.halt();
     c = (((double)val[3] + (double)val[5]) - ((double)val[2] + (double)val[4])) / 2;
     inc_angle = acos(STR_TIME / c);
     while (1) {
       for (int j = 0; j < 6; j++) {
-        Serial.println(val[j]);
+        Serial.print(val[j]);
+        Serial.print(",");
+        Serial.print(pos[j]);
+        Serial.print("\n");
       }
       Serial.println("**");
       Serial.println(inc_angle * 100);
       Serial.println("average speed");
-      Serial.println(avg_spd_L * 100);
+      Serial.println(avg_spd_L);
+      Serial.println(avg_spd_R);
       Serial.println("******");
     }
   }
