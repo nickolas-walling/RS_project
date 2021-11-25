@@ -7,8 +7,8 @@
 */
 
 //#define GO 6
-#define SAMPLE0 5
-#define READINGS 18
+#define SAMPLE0 4
+#define READINGS 14
 
 #include "encoders.h"
 #include "linesensor.h"
@@ -24,6 +24,7 @@ double c;
 int code[READINGS];
 int count = 0;
 bool start_tag = false;
+float offset = 0;
 
 float GO = 6;
 
@@ -51,8 +52,8 @@ int state = 0;
 
 int i = 0;
 
-unsigned long val[6];
-float pos[6];
+unsigned long val[READINGS] = {0};
+float pos[READINGS] = {0};
 bool flag = false;
 
 void setup() {
@@ -67,7 +68,6 @@ void setup() {
 
   avg_spd_L = 0.0;
   avg_spd_R = 0.0;
-
 
   setupEncoder0();
   setupEncoder1();
@@ -162,8 +162,8 @@ void loop() {
 
 double average(unsigned long num[3]) {
   double temp = 0;
-  for (int i = 0; i < 3; i++) {
-    temp += (double)num[i];
+  for (int k = 0; i < 3; k++) {
+    temp += (double)num[k];
   }
   temp = temp / 3;
 
@@ -173,38 +173,45 @@ double average(unsigned long num[3]) {
 double angle_check() {
   if (sensors.on_line() && state == 0) {
     start = micros();
+    //offset = kine.X;
+    val[i] = 0;
+    pos[i] = kine.X;
     state = 1;
+    motors.halt();
+    while(1){}
+    i++;
   }
   else if (!sensors.on_line() && state == 1) {
     val[i] = micros() - start;
-    pos[i] = kine.X;
+    pos[i] = kine.X;//-offset;
     state = 2;
     i++;
   }
   else if (sensors.on_line() && state == 2) {
     val[i] = micros() - start;
-    pos[i] = kine.X;
+    pos[i] = kine.X;//-offset;
     state = 1;
     i++;
   }
 
-  if (i == 6) {
-//    motors.halt();
+  if (kine.X >= 240) {//or i == READINGS
+    motors.halt();
     c = (((double)val[3] + (double)val[5]) - ((double)val[2] + (double)val[4])) / 2;
     inc_angle = acos(STR_TIME / c);
     while (1) {
-      for (int j = 0; j < 6; j++) {
+      for (int j = 0; j < READINGS; j++) {
         Serial.print(val[j]);
         Serial.print(",");
         Serial.print(pos[j]);
         Serial.print("\n");
       }
       Serial.println("**");
-      Serial.println(inc_angle * 100);
+      //Serial.println(inc_angle * 100);
       Serial.println("average speed");
       Serial.println(avg_spd_L);
       Serial.println(avg_spd_R);
       Serial.println("******");
+      Serial.println(i);
     }
   }
   return inc_angle;
