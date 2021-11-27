@@ -28,7 +28,7 @@ Motors_c motors;
 Kinematics_c kine;
 
 unsigned long start_ts0;
-unsigned long avg_elapsed = 0;
+float avg_elapsed = 0;
 float K_p_left = 1;
 float K_i_left = 0.05;
 float K_d_left = 100;
@@ -108,7 +108,7 @@ void loop() {
     motors.right(feedback_R);
 
     line_check();
-    avg_elapsed = avg_elapsed * 0.5 + elapsed0 * 0.5;
+    avg_elapsed = avg_elapsed * 0.5 + (float)elapsed0 * 0.5;
     start_ts0 = millis();
   }
 }
