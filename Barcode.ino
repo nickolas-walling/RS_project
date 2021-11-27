@@ -1,13 +1,11 @@
-/* THOUGHTS:
-    use left and right sensors separately for measurements
-    can determine directionality that way
-    give more data for averages
-    since we have kinematics, we could re-phrase everything for distance instead of time?
-    Need to re-set line time values--> play with sensitivity value
-*/
+/* NOTE:
+ * Hold paper with hands while robot is driving, otherwise the paper may slip
+ */
 
 #define SAMPLE0 5
 #define READINGS 16 //set this number to twice the number of lines you want to read
+#define buttonAPin 14
+
 
 #include "encoders.h"
 #include "linesensor.h"
@@ -30,6 +28,7 @@ Motors_c motors;
 Kinematics_c kine;
 
 unsigned long start_ts0;
+unsigned long avg_elapsed = 0;
 float K_p_left = 1;
 float K_i_left = 0.05;
 float K_d_left = 100;
@@ -43,14 +42,34 @@ int i = 0;
 unsigned long val[READINGS] = {0};
 float pos[READINGS] = {0};
 
+bool flag = false;
+
 void setup() {
   // put your setup code here, to run once:
   //Serial.begin(9600);
   //while (!Serial) {}
   Serial.println("***RESET***");
+  pinMode(buttonAPin, INPUT);
+  int buttonStateA = 0;
 
   sensors.initialize();
-  delay(3000);
+  /* CALIBRATION
+   *  
+   * Place on white surface until yellow LED turns off
+   * Once the LED turns on again, place on black surface
+   * Once LED turns off again calibration is finished
+   * Set robot in start postition
+   */
+
+  //once calibration is done, press A button and robot will go after 1.5 seconds
+  while (!flag) {
+    buttonStateA = digitalRead(buttonAPin);
+    if (buttonStateA == LOW) {
+      // turn LED on:
+      flag = true;
+      delay(1500);
+    }
+  }
   motors.initialize();
 
   avg_spd_L = 0.0;
@@ -89,6 +108,7 @@ void loop() {
     motors.right(feedback_R);
 
     line_check();
+    avg_elapsed = avg_elapsed * 0.5 + elapsed0 * 0.5;
     start_ts0 = millis();
   }
 }
@@ -145,7 +165,17 @@ void line_check() {
       Serial.println(avg_spd_R);
       Serial.println("Number of readings:");
       Serial.println(i); //prints out how many readings
+      Serial.println("Average sampling time");
+      Serial.println(avg_elapsed);
       Serial.println("******");
     }
   }
 }
+
+/* THOUGHTS:
+    use left and right sensors separately for measurements
+    can determine directionality that way
+    give more data for averages
+    since we have kinematics, we could re-phrase everything for distance instead of time?
+    Need to re-set line time values--> play with sensitivity value
+*/

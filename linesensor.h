@@ -161,7 +161,6 @@ class LineSensor_c {
       int i = 0;
       Serial.println("Place on white surface");
       delay(2000);
-      digitalWrite(LED_BUILTIN, LOW);
 
       while (i < n) {
         read_linesensors();
@@ -171,12 +170,13 @@ class LineSensor_c {
 
         i ++;
       }
+      digitalWrite(LED_BUILTIN, LOW);
+
 
       delay(3000);
       Serial.println("place on Black surface");
       digitalWrite(LED_BUILTIN, HIGH);
       delay(2000);
-      digitalWrite(LED_BUILTIN, LOW);
 
       i = 0;
       while ( i < n) {
@@ -187,6 +187,8 @@ class LineSensor_c {
         store_black_R[i] = data[2];
         i ++;
       }
+      digitalWrite(LED_BUILTIN, LOW);
+
 
       L_offset = getMean(store_white_L, jello);
       C_offset = getMean(store_white_C, jello);
