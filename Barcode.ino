@@ -125,7 +125,6 @@ void loop() {
       x_prev = kine.X;
     }
 
-
     feedback_L = left.update(GO, avg_spd_L);
     feedback_R = right.update(GO, avg_spd_R);
 
@@ -140,13 +139,24 @@ void loop() {
   if (j == READINGS) {
     while (1) {
       motors.halt();
+      Serial.println("Data:");
       for (int k = 0; k < READINGS; k++) {
         Serial.println(data[k]);
       }
       Serial.println("*");
+      Serial.println("Distance since last reading:");
       for (int k = 0; k < READINGS; k++) {
         Serial.println(x_diff_store[k]);
       }
+      Serial.println("**");
+      Serial.print("Average velocity left/right: ");
+      Serial.print(avg_spd_L);
+      Serial.print(" , ");
+      Serial.println(avg_spd_R);
+      Serial.println("***");
+      Serial.print("Average sample time (ms): ");
+      Serial.println(avg_elapsed);
+      
       Serial.println("******");
     }
   }
