@@ -1,9 +1,9 @@
 /* NOTE:
- * Hold paper with hands while robot is driving, otherwise the paper may slip
- */
+   Hold paper with hands while robot is driving, otherwise the paper may slip
+*/
 
 #define SAMPLE0 5
-#define READINGS 16 //set this number to twice the number of lines you want to read
+#define READINGS 16 //set this number to twice the number of lines you want to read (including gaps)
 #define buttonAPin 14
 
 
@@ -18,9 +18,11 @@ float GO = 6; //this sets the wheel speed in radians per second
 
 float avg_spd_L;
 float avg_spd_R;
+float x_prev = 0;
+float LINE_WIDTH = 8;
 
-PID_c heading;
-PID_c follow;
+float CHECK = (LINE_WIDTH / 2)*0.9; //we are pinging the line based on distance. Because it's highly unlikely to go exactly WIDTH/2 every time, we want a slightly faster sampling rate. If we're "close enough" go ahead and ping. 
+
 PID_c left;
 PID_c right;
 LineSensor_c sensors;
@@ -32,17 +34,13 @@ float avg_elapsed = 0;
 float K_p_left = 1;
 float K_i_left = 0.05;
 float K_d_left = 100;
+int j = 0;
 
-unsigned long start = 0;
-
-int state = 0;
-
-int i = 0;
-
-unsigned long val[READINGS] = {0};
-float pos[READINGS] = {0};
+bool data[READINGS];
+float x_diff_store[READINGS] = {0};
 
 bool flag = false;
+bool flag2 = false;
 
 void setup() {
   // put your setup code here, to run once:
@@ -54,12 +52,12 @@ void setup() {
 
   sensors.initialize();
   /* CALIBRATION
-   *  
-   * Place on white surface until yellow LED turns off
-   * Once the LED turns on again, place on black surface
-   * Once LED turns off again calibration is finished
-   * Set robot in start postition
-   */
+
+     Place on white surface until yellow LED turns off
+     Once the LED turns on again, place on black surface
+     Once LED turns off again calibration is finished
+     Set robot in start postition
+  */
 
   //once calibration is done, press A button and robot will go after 1.5 seconds
   while (!flag) {
@@ -88,6 +86,7 @@ void loop() {
   // put your main code here, to run repeatedly:
   unsigned long current_ts0 = millis();
   unsigned long elapsed0;
+  float x_diff;
 
   float feedback_L;
   float feedback_R;
@@ -97,9 +96,35 @@ void loop() {
   if (elapsed0 > SAMPLE0) {
     kine.update();
     kine.velocity(elapsed0);
+
     avg_spd_L = (avg_spd_L * 0.7) + (kine.velocity_L_rad * 0.3);
     avg_spd_R = (avg_spd_R * 0.7) + (kine.velocity_R_rad * 0.3);
-    sensors.read_linesensors();
+
+    //unless we've found a line, we're always searching for a line
+    if (!flag2) {
+      sensors.read_linesensors();
+    }
+
+    //keeps track of distance since last measurement
+    x_diff = kine.X - x_prev;
+
+    //if we've gone the requisite distance AND we've already found a line, read the line
+    if (x_diff >= CHECK && flag2) {
+      sensors.read_linesensors();
+      data[j] = sensors.on_line();
+      x_diff_store[j] = x_diff;
+      j++;
+      x_prev = kine.X;
+    }
+
+    //if this is the first time we're finding a line, record the distance and switch flag2 to true
+    if (sensors.on_line() && !flag2) {
+      data[j] = true;
+      flag2 = true;
+      j++;
+      x_prev = kine.X;
+    }
+
 
     feedback_L = left.update(GO, avg_spd_L);
     feedback_R = right.update(GO, avg_spd_R);
@@ -107,70 +132,26 @@ void loop() {
     motors.left(feedback_L);
     motors.right(feedback_R);
 
-    line_check();
     avg_elapsed = avg_elapsed * 0.5 + (float)elapsed0 * 0.5;
+
     start_ts0 = millis();
   }
-}
 
-void line_check() {
-
-  //This is where the line measurements start
-  //If you want it to just stop the first time it reads a line, add "motors.halt(); while (1){} to this section
-  if (sensors.on_line() && state == 0) {
-    start = micros();
-    val[i] = 0;
-    pos[i] = kine.X;
-    state = 1;
-    i++;
-  }
-
-
-  //reads when it goes off of a line
-  else if (!sensors.on_line() && state == 1) {
-    val[i] = micros() - start;
-    pos[i] = kine.X;//-offset;
-    state = 2;
-    i++;
-  }
-
-  //reads when it goes onto a line (only after the initial line read)
-  else if (sensors.on_line() && state == 2) {
-    val[i] = micros() - start;
-    pos[i] = kine.X;//-offset;
-    state = 1;
-    i++;
-  }
-
-
-  //stops the robot if it has read however many readings we set it to OR if it has traveled 240 mm
-  if (kine.X >= 240 || i == READINGS) {
-
-    motors.halt(); //stops motors
-
-    //traps in an infinite loop, plug in cable to get data
+  if (j == READINGS) {
     while (1) {
-
-      //prints out data points in (time, position) format
-      for (int j = 0; j < READINGS; j++) {
-        Serial.print(val[j]);
-        Serial.print(",");
-        Serial.print(pos[j]);
-        Serial.print("\n");
+      motors.halt();
+      for (int k = 0; k < READINGS; k++) {
+        Serial.println(data[k]);
       }
-      //prints out the average speed
-      Serial.println("**");
-      Serial.println("average speed");
-      Serial.println(avg_spd_L);
-      Serial.println(avg_spd_R);
-      Serial.println("Number of readings:");
-      Serial.println(i); //prints out how many readings
-      Serial.println("Average sampling time");
-      Serial.println(avg_elapsed);
+      Serial.println("*");
+      for (int k = 0; k < READINGS; k++) {
+        Serial.println(x_diff_store[k]);
+      }
       Serial.println("******");
     }
   }
 }
+
 
 /* THOUGHTS:
     use left and right sensors separately for measurements
