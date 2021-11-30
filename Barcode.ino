@@ -3,7 +3,7 @@
 */
 
 #define SAMPLE0 5
-#define READINGS 16 //set this number to twice the number of lines you want to read (including gaps)
+#define READINGS 32 //set this number to twice the number of lines you want to read (including gaps)
 #define buttonAPin 14
 
 
@@ -147,7 +147,7 @@ void loop() {
       Serial.println("Distance since last reading:");
       for (int k = 0; k < READINGS; k++) {
         Serial.println(x_diff_store[k]);
-      }
+      } 
       Serial.println("**");
       Serial.print("Average velocity left/right: ");
       Serial.print(avg_spd_L);
